@@ -31,7 +31,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #define ESP32_SDA 4
 #define ESP32_SCL 5
 
-#define FREQUENCY 434.0
+#define FREQUENCY 434.0   //868.0 or 915.0
 #define BANDWIDTH 125.0
 #define SPREADING_FACTOR 9
 #define CODING_RATE 7
@@ -41,7 +41,9 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 
 //SX1278 radio = new Module(LORA_CS, DIO0, LORA_RST, DIO1);
-SX1278 radio = new Module(LORA_CS, DIO0, LORA_RST, DIO1, SPI, SPISettings());
+SX1278 radio = new Module(LORA_CS, DIO0, LORA_RST, DIO1, SPI, SPISettings());  //433Mhz
+//SX1276 radio = new Module(LORA_CS, DIO0, LORA_RST, DIO1, SPI, SPISettings());   //868Mhz or 915Mhz
+
 
 HardwareSerial MySerial(1);
 
