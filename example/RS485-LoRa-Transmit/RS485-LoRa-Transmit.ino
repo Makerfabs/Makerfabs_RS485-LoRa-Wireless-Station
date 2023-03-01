@@ -1,3 +1,5 @@
+// Vincent Fix 2023/3/1
+
 #include <RadioLib.h>
 #include <SPI.h>
 #include <Wire.h>
@@ -98,8 +100,16 @@ void setup() {
     
 
 }
-unsigned char testcode[8] = {0X01,0X03,0X00,0X00,0X00,0X02,0XC4,0X0B};
-unsigned char responsecode[9] = {};
+
+// unsigned char testcode[8] = {0X01,0X03,0X00,0X00,0X00,0X02,0XC4,0X0B};
+// unsigned char responsecode[9] = {};
+
+// New Sensor 2023/3/1
+unsigned char testcode[8] =
+    {0X01, 0X04, 0X00, 0X00,
+     0X00, 0X07, 0XB1, 0XC8}; 
+unsigned char responsecode[80] = {0};
+
 int moisture;
 int tem;
 
