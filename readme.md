@@ -2,11 +2,11 @@
 
 ```c++
 /*
-Version:		V1.0
+Version:		V2.0
 Author:			Vincent
 Create Date:	2023/3/1
 Note:
-	
+		2023/3/1	V2.0: Use new sensor, change request code.
 */
 ```
 
@@ -56,21 +56,63 @@ This Industry-grade soil remote monitor intends for these applications of agricu
 
 # Code
 
-
-
 ## Compiler Options
 
 **If you have any questions，such as how to install the development board, how to download the code, how to install the library. Please refer to :[Makerfabs_FAQ](https://github.com/Makerfabs/Makerfabs_FAQ)**
 
 - Install board : ESP32 .
-
 - Install library : Adafruit GFX library (V1.10.11) , Adafruit SSD1306 library (V2.4.6) and RadioLib library 4.0.6.
-
 - Upload codes, select "ESP32 Dev Module"
 
-  
-
-## Example
 
 
+## Sensor User Manual
+
+
+
+Cable definition:
+
+- Grey cable: DC 5V power supply +
+- Black line: Power ground (GND)
+- Yellow and green wires: RS485-A;
+- Brown cable: RS485-B.
+
+
+
+The sensor uses Modbus RTU.
+
+Request Command：**01 04 00 00 00 07 B1 C8**
+
+- 0x01 Sensor address; 
+- 0x04 function code; 
+- 0x00 0x00 read register start position; 
+- 0x00 0x07 Number of registers read; 
+- 0xB1 0xC8  Check
+
+
+
+Receive Data：**01 04 0E 01 D7 01 07 00 00 00 46 00 0F 00 14 00 32 CC 93**
+
+- 0x01 Sensor address;
+- 0x04 function code;
+- 0x0E data length;
+- 0x01 0xD7 Soil moisture data 01 D7 (hexadecimal) is 47.1%
+- 0x01 0x07 Soil Temperature Data 01 07 (hexadecimal) is 26.3 ° C
+- 0x00 0x00 blank
+- 0x00 0x46 PH data 00 46 (hexadecimal) is 7.0
+- 0x00 0x0F Soil Nitrogen data 00 0F (hexadecimal) is 15mg/kg
+- 0x00 0x14 Soil Phosphorus data 00 14 (hexadecimal) is 20mg/kg
+- 0x00 0x32 Soil potassium data 00 32 (hexadecimal) is 50mg/kg
+- 0xCC 0x93 check
+
+ 
+
+| Parameter   | Address | Range       | Sampling Value | Action    |
+| ----------- | ------- | ----------- | -------------- | --------- |
+| Humidity    | 0000H   | 0~100%      | /10            | Only Read |
+| Temperature | 0001H   | -40~80℃     | /10            | Only Read |
+| PH          | 0003H   | 4~9         | /10            | Only Read |
+| Nitrogen    | 0004H   | 0~1999mg/kg | /1             | Only Read |
+| Phosphorus  | 0005H   | 0~1999mg/kg | /1             | Only Read |
+| Potassium   | 0006H   | 0~1999mg/kg | /1             | Only Read |
 
