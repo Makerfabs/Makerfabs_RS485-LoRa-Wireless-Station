@@ -1,4 +1,8 @@
-// Vincent Fix 2023/3/1
+// Vincent Fix 2023/5/24
+// Need Choice Sensor Type !
+
+// #define SENSOR_5_PIN
+#define SENSOR_3_PIN
 
 #include <RadioLib.h>
 #include <SPI.h>
@@ -7,67 +11,27 @@
 #include <Adafruit_SSD1306.h>
 #include <HardwareSerial.h>
 
-#define SCREEN_WIDTH 128 // OLED display width, in pixels
-#define SCREEN_HEIGHT 32 // OLED display height, in pixels
+#include "pin_config.h"
 
-#define OLED_RESET -1 // Reset pin # (or -1 if sharing Arduino reset pin)
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-
-#define Display_power 19
-#define RS485_power 18
-
-// esp32
-#define DIO0 25
-#define DIO1 27
-
-#define ESP32_SDA 4
-#define ESP32_SCL 5
-
-#define LORA_RST 33
-#define LORA_CS 32
-
-#define SPI_MOSI 13
-#define SPI_MISO 12
-#define SPI_SCK 14
-
-#define FREQUENCY 434.0
-#define BANDWIDTH 125.0
-#define SPREADING_FACTOR 9
-#define CODING_RATE 7
-#define OUTPUT_POWER 10
-#define PREAMBLE_LEN 8
-#define GAIN 0
-
-#define MYSerialRX 23
-#define MYSerialTX 22
-
 HardwareSerial MySerial(1);
 
-// unsigned char test_command[8] = {0X01, 0X03, 0X00, 0X00, 0X00, 0X07, 0X04, 0X08};
-// New Sensor 2023/3/1
-unsigned char test_command[8] =
-    {0X01, 0X04, 0X00, 0X00,
-     0X00, 0X07, 0XB1, 0XC8}; 
-unsigned char test_response[80] = {0};
+unsigned char resp[80] = {0};
 
-int moisture;
-int tem;
-int ph;
-float moisture_value;
-float tem_value;
-float ph_value;
-int P_value;
-int N_value;
-int K_value;
-float P_float_value;
-float N_float_value;
-float K_float_value;
+int humidity = 0;
+int tem = 0;
+int ph = 0;
+float humidity_value = 0.0;
+float tem_value = 0.0;
+float ph_value = 0.0;
+int P_value = 0;
+int N_value = 0;
+int K_value = 0;
 
 void setup()
 {
   // put your setup code here, to run once:
   Serial.begin(4800);
-
   MySerial.begin(4800, SERIAL_8N1, 23, 22);
 
   pinMode(Display_power, OUTPUT);
@@ -88,26 +52,67 @@ void setup()
       ; // Don't proceed, loop forever
   }
   Serial.println("SSD1306 found");
-
-  MySerial.write(test_command, 8);
-
-  delay(1000);
-
-  MySerial.write(test_command, 8);
-
-  delay(1000);
 }
 
 void loop()
 {
   Serial.println("Send loop");
-  //********************GET Temperature, Moisture and PH*******************
-  MySerial.write(test_command, 8);
+
+#ifdef SENSOR_5_PIN
+  sensor_read_5pin();
+  value_log();
+  value_show_5pin(humidity_value, tem_value, ph_value);
+  delay(3000);
+  NPK_Show(N_value, P_value, K_value);
+  delay(3000);
+#endif
+
+#ifdef SENSOR_3_PIN
+  sensor_read_3pin();
+  value_log();
+  value_show_3pin(humidity_value, tem_value);
+  delay(3000);
+#endif
+}
+
+void sensor_read_3pin()
+{
+  unsigned char ask_cmd[8] = {0X01, 0X03, 0X00, 0X00, 0X00, 0X02, 0XC4, 0X0B};
+  MySerial.write(ask_cmd, 8);
   int i = 0;
 
   while (MySerial.available() > 0 && i < 80)
   {
-    test_response[i] = MySerial.read();
+    resp[i] = MySerial.read();
+    i++;
+
+    yield();
+  }
+  Serial.print("Answer Length:");
+  Serial.println(i);
+
+  for (int j = 0; j < 19; j++)
+  {
+    Serial.print((int)resp[j]);
+    Serial.print("  ");
+  }
+  Serial.print("\n");
+
+  humidity = CaculateValue((int)resp[3], (int)resp[4]);
+  humidity_value = humidity * 0.1;
+  tem = CaculateValue((int)resp[5], (int)resp[6]);
+  tem_value = tem * 0.1;
+}
+
+void sensor_read_5pin()
+{
+  unsigned char ask_cmd[8] = {0X01, 0X04, 0X00, 0X00, 0X00, 0X07, 0XB1, 0XC8};
+  MySerial.write(ask_cmd, 8);
+  int i = 0;
+
+  while (MySerial.available() > 0 && i < 80)
+  {
+    resp[i] = MySerial.read();
     i++;
 
     yield();
@@ -116,73 +121,24 @@ void loop()
   Serial.print("Answer Length:");
   Serial.println(i);
 
+  char temp[20];
   for (int j = 0; j < 19; j++)
   {
-    Serial.print((int)test_response[j]);
-    Serial.print("  ");
+    sprintf(temp, "%02X ", (int)resp[j]);
+    Serial.printf(temp);
   }
+
   Serial.print("\n");
 
-  moisture = CaculateValue((int)test_response[3], (int)test_response[4]);
-  moisture_value = moisture * 0.1;
-  tem = CaculateValue((int)test_response[5], (int)test_response[6]);
+  humidity = CaculateValue((int)resp[3], (int)resp[4]);
+  humidity_value = humidity * 0.1;
+  tem = CaculateValue((int)resp[5], (int)resp[6]);
   tem_value = tem * 0.1;
-  ph = CaculateValue((int)test_response[9], (int)test_response[10]);
+  ph = CaculateValue((int)resp[9], (int)resp[10]);
   ph_value = ph * 0.1;
-
-  Serial.print("moisture:");
-  Serial.println(moisture);
-  Serial.print("moisture_value:");
-  Serial.println(moisture_value);
-  Serial.print("tem_value:");
-  Serial.println(tem_value);
-  Serial.print("ph_value:");
-  Serial.println(ph_value);
-  value_show(moisture_value, tem_value, ph_value);
-  delay(1000);
-
-  //****************GET Nitrogen, Phosphorus and Potassium
-
-  N_value = CaculateValue((int)test_response[11], (int)test_response[12]);
-  P_value = CaculateValue((int)test_response[13], (int)test_response[14]);
-  K_value = CaculateValue((int)test_response[15], (int)test_response[16]);
-
-  Serial.print("N= ");
-  Serial.print(N_value);
-  Serial.println(" mg/kg");
-  Serial.print("P= ");
-  Serial.print(P_value);
-  Serial.println(" mg/kg");
-  Serial.print("K= ");
-  Serial.print(K_value);
-  Serial.println(" mg/kg");
-
-  NPK_Show(N_value, P_value, K_value);
-  delay(1000);
-}
-
-void logo_show()
-{
-  display.clearDisplay();
-
-  display.setTextColor(SSD1306_WHITE);
-  display.setTextSize(2); // Draw 2X-scale text
-  display.setCursor(10, 0);
-  display.println(F("Makerfabs"));
-  display.setTextSize(1);
-  display.setCursor(10, 16);
-  display.println(F("RS485-LoRa"));
-  display.display(); // Show initial text
-  delay(100);
-
-  // Scroll in various directions, pausing in-between:
-  display.startscrollright(0x00, 0x01);
-  delay(4000);
-  display.startscrolldiagright(0x00, 0x07);
-  delay(2000);
-  display.startscrolldiagleft(0x00, 0x07);
-  delay(2000);
-  display.stopscroll();
+  N_value = CaculateValue((int)resp[11], (int)resp[12]);
+  P_value = CaculateValue((int)resp[13], (int)resp[14]);
+  K_value = CaculateValue((int)resp[15], (int)resp[16]);
 }
 
 int CaculateValue(int x, int y)
@@ -193,7 +149,26 @@ int CaculateValue(int x, int y)
   return t;
 }
 
-void value_show(float h, float t, float ph_f)
+void value_show_3pin(float h, float t)
+{
+  display.clearDisplay();
+
+  display.setTextColor(SSD1306_WHITE);
+  display.setTextSize(1); // Draw 2X-scale text
+  display.setCursor(2, 0);
+  display.print(F("T:"));
+  display.print(t, 1);
+  display.print(F("C"));
+
+  display.setCursor(66, 0);
+  display.print(F("H:"));
+  display.print(h, 1);
+  display.print(F("%"));
+
+  display.display(); // Show initial text
+}
+
+void value_show_5pin(float h, float t, float ph_f)
 {
   display.clearDisplay();
 
@@ -214,7 +189,6 @@ void value_show(float h, float t, float ph_f)
   display.print(ph_f, 1);
 
   display.display(); // Show initial text
-  delay(3000);
 }
 
 void NPK_Show(int N, int P, int K)
@@ -239,5 +213,30 @@ void NPK_Show(int N, int P, int K)
   display.print(F(" mg/kg"));
 
   display.display(); // Show initial text
-  delay(3000);
+}
+
+void value_log()
+{
+  Serial.print("humidity:");
+  Serial.println(humidity);
+  Serial.print("humidity_value:");
+  Serial.println(humidity_value);
+  Serial.print("tem_value:");
+  Serial.println(tem_value);
+
+#ifdef SENSOR_5_PIN
+  Serial.print("ph_value:");
+  Serial.println(ph_value);
+
+  Serial.print("N= ");
+  Serial.print(N_value);
+  Serial.println(" mg/kg");
+  Serial.print("P= ");
+  Serial.print(P_value);
+  Serial.println(" mg/kg");
+  Serial.print("K= ");
+  Serial.print(K_value);
+  Serial.println(" mg/kg");
+
+#endif
 }
