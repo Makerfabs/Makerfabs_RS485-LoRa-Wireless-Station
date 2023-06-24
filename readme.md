@@ -27,7 +27,7 @@ Note:
 
 Product Link ：[Industrial-grade Soil Remote Monitor(Humidity/ Temperature/ PH/ Nitrogen/ Phosphorus/ Potassium)](https://www.makerfabs.com/industrial-grade-soil-remote-monitor.html) 
 
-Wiki Link : [RS485-LoRa Wireless Station](https://www.makerfabs.com/wiki/index.php?title=RS485-LoRa_Wireless_Station) 
+Wiki Link : [RS485-LoRa Wireless Station](https://wiki.makerfabs.com/Industrial-grade_Soil_Remote_Monitor.html) 
 
 With the development of agricultural modernization and the popularization of precision agriculture, the remote monitoring of soil parameters such as temperature, moisture, PH, and so on, becomes more important.
 
